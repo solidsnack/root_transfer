@@ -1,0 +1,21 @@
+# Include all directories in the /var heirarchy.
++ /**/
+# Ignore these files.
+- /lib/NetworkManager/**
+- /lib/apt/lists/lock
+- /lib/bluetooth/**
+- /lib/gdm/**
+- /lib/mlocate/**
+- /lib/rabbitmq/**
+- /lib/udisks/**
+- /lib/upower/**
+- /lib/urandom/**
+- /lib/ureadahead/**
+- /lib/xkb/**
+- /local/**
+- /lock/**
+- /log/**
+- /mail/**
+- /opt/**
+- /run/**
+- /tmp/**

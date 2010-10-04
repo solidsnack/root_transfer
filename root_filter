@@ -1,0 +1,14 @@
+# Include all directories in the / heirarchy.
++ /**/
+# Ignore these files.
+- /etc/crypttab
+- /etc/fstab
+- /etc/hostname
+- /etc/mtab
+- /etc/mtab.fuselock
+- /etc/lvm/**
+- /media/**
+- /mnt/**
+- /root/**
+- /tmp/**
+- /var/**
