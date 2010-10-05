@@ -1,9 +1,11 @@
 # Include all directories in the / heirarchy.
 + /**/
 # Ignore these files.
+- /.rsync-filter
 - /etc/crypttab
 - /etc/fstab
 - /etc/hostname
+- /etc/hosts
 - /etc/mtab
 - /etc/mtab.fuselock
 - /etc/lvm/**

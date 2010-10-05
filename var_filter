@@ -1,6 +1,7 @@
 # Include all directories in the /var heirarchy.
 + /**/
 # Ignore these files.
+- /.rsync-filter
 - /lib/NetworkManager/**
 - /lib/apt/lists/lock
 - /lib/bluetooth/**
