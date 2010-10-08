@@ -84,7 +84,7 @@ done
 log "Finished all copies; rewriting symlinks."
 
 mv "$to" "${arena}/${t}"
-[ -l "${arena}/latest" ] && rm "${arena}/latest"
+[ -L "${arena}/latest" ] && rm "${arena}/latest"
 ln -s "./${t}" "${arena}/latest"
 log "Done."
 
