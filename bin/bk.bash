@@ -34,7 +34,7 @@ function timestamp {
 }
 
 function log {
-  echo -n "`timestamp` -bk- $host $1" 1>&2
+  echo "`timestamp` -bk- $host $1" 1>&2
 }
 
 function rsync_shim {
