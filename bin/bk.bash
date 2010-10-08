@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -e
+set -o errexit
+set -o nounset
+set -o pipefail
 
 host=`hostname`
 
@@ -8,7 +10,7 @@ function working_area {
   mkdir -p "$host"
   mkdir -p "$host"/mnt
   mkdir -p "$host"/workspace
-  (cd "$host" && pwd --physical)
+  (cd "$host" && pwd -P)
 }
 
 # Obtain lv listing.
@@ -18,7 +20,7 @@ function logical_volumes {
 
 # Create snapshot.
 function snapon {
-  lvm lvcreate --size '50%FREE' --snapshot --name snap "$1"
+  lvm lvcreate --extents '50%FREE' --snapshot --name snap "$1" > /dev/null
   lvm lvdisplay | sed -rn '/^  LV Name +([^ ]+\/snap)$/ { s//\1/ ; p }'
 }
 
@@ -32,8 +34,7 @@ function timestamp {
 }
 
 function log {
-  echo -n "`timestamp` -bk- ${host} " 1>&2
-  echo "$1" 1>&2
+  echo -n "`timestamp` -bk- $host $1" 1>&2
 }
 
 function rsync_shim {
@@ -44,11 +45,11 @@ function rsync_shim {
              --inplace \
              --numeric-ids \
              --progress \
-             "$@" ;;
+             "$@"
 }
 
 function latest_backup {
-  (cd "${arena}/${1}/latest/" && pwd --physical)
+  (cd "${arena}/latest/" && pwd -P)
 }
 
 
@@ -59,20 +60,20 @@ to="${arena}/workspace/${t}"
 log "Backing up all LVM logical volumes."
 for lv in `logical_volumes`
 do
-  local vg_lv=${lv#/dev/}
+  vg_lv=${lv#/dev/}
   log "${vg_lv} Creating and mounting snapshot."
-  local snap_device=`snapon "${lv}"`
+  snap_device=`snapon "${lv}"`
   mount "$snap_device" "${arena}/mnt"
   mkdir -p "${to}/${vg_lv}"
   if latest=`latest_backup "$vg_lv"`
   then
     log "${vg_lv} Recycling previous backup \`${latest}'."
     log "${vg_lv} Starting \`rsync' run."
-    run_rsync --link-dest="$latest" "$from"/ "${to}/${vg_lv}"
+    rsync_shim --link-dest="$latest" "${arena}/mnt"/ "${to}/${vg_lv}"
   else
     log "${vg_lv} No previous backup to recycle."
     log "${vg_lv} Starting \`rsync' run."
-    run_rsync "$from"/ "${to}/${vg_lv}"
+    rsync_shim "${arena}/mnt"/ "${to}/${vg_lv}"
   fi
   log "${vg_lv} Run of \`rsync' complete."
   log "${vg_lv} Unmounting and destroying snapshot."
