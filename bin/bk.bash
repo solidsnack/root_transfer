@@ -49,7 +49,7 @@ function rsync_shim {
 }
 
 function latest_backup {
-  (cd "${arena}/latest/" && pwd -P)
+  (cd "${arena}/latest/${1}" && pwd -P)
 }
 
 
