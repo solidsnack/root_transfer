@@ -58,6 +58,7 @@ t=`timestamp`
 to="${arena}/workspace/${t}"
 
 log "Backing up all LVM logical volumes."
+log "Backup timestamp is ${t}."
 for lv in `logical_volumes`
 do
   vg_lv=${lv#/dev/}
@@ -81,10 +82,13 @@ do
   snapoff "$snap_device"
   log "${vg_lv} Done."
 done
-log "Finished all copies; rewriting symlinks."
+log "Finished all copies for backup."
 
+log "Moving backup out of workspace."
 mv "$to" "${arena}/${t}"
+log "Pointing \`latest' symlink at backup."
 [ -L "${arena}/latest" ] && rm "${arena}/latest"
 ln -s "./${t}" "${arena}/latest"
-log "Done."
+
+log "Backup ${t} complete."
 
