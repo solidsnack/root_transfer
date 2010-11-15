@@ -52,6 +52,49 @@ function latest_backup {
   [ -d "${arena}/latest/${1}" ] && cd "${arena}/latest/${1}" && pwd -P
 }
 
+function backup {
+  local lv=$1
+  local vg_lv=${lv#/dev/}
+  log "${vg_lv} Trying to backup."
+  log "${vg_lv} Creating snapshot."
+  if snap_device=`snapon "${lv}"`
+  then
+    log "${vg_lv} Mounting snapshot."
+    if mount "$snap_device" "${arena}/mnt"
+    then
+      mkdir -p "${to}/${vg_lv}"
+      if latest=`latest_backup "$vg_lv"`
+      then
+        log "${vg_lv} Recycling previous backup \`${latest}'."
+        log "${vg_lv} Starting \`rsync' run."
+        if rsync_shim --link-dest="$latest" "${arena}/mnt"/ "${to}/${vg_lv}"
+        then
+          log "${vg_lv} Run of \`rsync' complete."
+        else
+          log "${vg_lv} Run of \`rsync' failed."
+        fi
+      else
+        log "${vg_lv} No previous backup to recycle."
+        log "${vg_lv} Starting \`rsync' run."
+        if rsync_shim "${arena}/mnt"/ "${to}/${vg_lv}"
+        then
+          log "${vg_lv} Run of \`rsync' complete."
+        else
+          log "${vg_lv} Run of \`rsync' failed."
+        fi
+      fi
+      log "${vg_lv} Unmounting snapshot."
+      umount "${arena}/mnt"
+    else
+      log "${vg_lv} Can not mount."
+    fi
+    log "${vg_lv} Destroying snapshot."
+    snapoff "$snap_device"
+  else
+    log "${vg_lv} Can not snapshot."
+  fi
+  log "${vg_lv} Done trying."
+}
 
 arena=`working_area`
 t=`timestamp`
@@ -61,28 +104,9 @@ log "Backing up all LVM logical volumes."
 log "Backup timestamp is ${t}."
 for lv in `logical_volumes`
 do
-  vg_lv=${lv#/dev/}
-  log "${vg_lv} Creating and mounting snapshot."
-  snap_device=`snapon "${lv}"`
-  mount "$snap_device" "${arena}/mnt"
-  mkdir -p "${to}/${vg_lv}"
-  if latest=`latest_backup "$vg_lv"`
-  then
-    log "${vg_lv} Recycling previous backup \`${latest}'."
-    log "${vg_lv} Starting \`rsync' run."
-    rsync_shim --link-dest="$latest" "${arena}/mnt"/ "${to}/${vg_lv}"
-  else
-    log "${vg_lv} No previous backup to recycle."
-    log "${vg_lv} Starting \`rsync' run."
-    rsync_shim "${arena}/mnt"/ "${to}/${vg_lv}"
-  fi
-  log "${vg_lv} Run of \`rsync' complete."
-  log "${vg_lv} Unmounting and destroying snapshot."
-  umount "${arena}/mnt"
-  snapoff "$snap_device"
-  log "${vg_lv} Done."
+  backup "$lv"
 done
-log "Finished all copies for backup."
+log "Done trying."
 
 log "Moving backup out of workspace."
 mv "$to" "${arena}/${t}"
