@@ -96,13 +96,20 @@ function backup {
   log "${vg_lv} Done trying."
 }
 
+log "Backing up all LVM logical volumes."
+
+volumes=`logical_volumes`
+if egrep -q '/snap$' <<<"$volumes"
+then
+  log "Found snapshot volume already, aborting."
+  exit 2
+fi
+
 arena=`working_area`
 t=`timestamp`
 to="${arena}/workspace/${t}"
-
-log "Backing up all LVM logical volumes."
 log "Backup timestamp is ${t}."
-for lv in `logical_volumes`
+for lv in $volumes
 do
   backup "$lv"
 done
