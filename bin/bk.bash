@@ -1,10 +1,15 @@
 #!/bin/bash
+set -o errexit -o nounset -o pipefail
+function usage {
+cat <<USAGE
+ USAGE: bk.bash <backup dir>
 
-set -o errexit
-set -o nounset
-set -o pipefail
+  Backs up all LVM logical volumes to the backup directory.
 
-host=`hostname`
+USAGE
+}
+
+host=$(hostname)
 
 function working_area {
   mkdir -p "$host"
@@ -34,7 +39,7 @@ function timestamp {
 }
 
 function log {
-  echo "`timestamp` -bk- $host $1" 1>&2
+  echo "$(timestamp) -bk- $host $1" 1>&2
 }
 
 function rsync_shim {
@@ -57,13 +62,13 @@ function backup {
   local vg_lv=${lv#/dev/}
   log "${vg_lv} Trying to backup."
   log "${vg_lv} Creating snapshot."
-  if snap_device=`snapon "${lv}"`
+  if snap_device=$(snapon "${lv}")
   then
     log "${vg_lv} Mounting snapshot."
     if mount "$snap_device" "${arena}/mnt"
     then
       mkdir -p "${to}/${vg_lv}"
-      if latest=`latest_backup "$vg_lv"`
+      if latest=$(latest_backup "$vg_lv")
       then
         log "${vg_lv} Recycling previous backup \`${latest}'."
         log "${vg_lv} Starting \`rsync' run."
@@ -96,17 +101,23 @@ function backup {
   log "${vg_lv} Done trying."
 }
 
-log "Backing up all LVM logical volumes."
+case "${1:-}" in
+  -h|'-?'|--help|help) usage ; exit 0 ;;
+  *)                   cd "$1" ;;
+  '')                  echo $'Please specify backup dir.' 1>&2 ; exit 1 ;;
+esac
 
-volumes=`logical_volumes`
+log "Backing up all LVM logical volumes in $(pwd -P)."
+
+volumes=$(logical_volumes)
 if egrep -q '/snap$' <<<"$volumes"
 then
   log "Found snapshot volume already, aborting."
   exit 2
 fi
 
-arena=`working_area`
-t=`timestamp`
+arena=$(working_area)
+t=$(timestamp)
 to="${arena}/workspace/${t}"
 log "Backup timestamp is ${t}."
 for lv in $volumes
